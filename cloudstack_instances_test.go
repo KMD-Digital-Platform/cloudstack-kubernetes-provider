@@ -176,27 +176,41 @@ func TestNodeAddresses(t *testing.T) {
 }
 
 func TestGetProviderIDFromInstanceID(t *testing.T) {
-	cs := &CSCloud{}
-
 	tests := []struct {
-		name       string
-		instanceID string
-		want       string
+		name             string
+		providerIDPrefix string
+		instanceID       string
+		want             string
 	}{
 		{
-			name:       "valid instance ID",
-			instanceID: "vm-123",
-			want:       "external-cloudstack://vm-123",
+			name:             "default prefix (CAPC format)",
+			providerIDPrefix: "cloudstack:///",
+			instanceID:       "vm-123",
+			want:             "cloudstack:///vm-123",
 		},
 		{
-			name:       "empty instance ID",
-			instanceID: "",
-			want:       "external-cloudstack://",
+			name:             "legacy prefix",
+			providerIDPrefix: "external-cloudstack://",
+			instanceID:       "vm-123",
+			want:             "external-cloudstack://vm-123",
+		},
+		{
+			name:             "custom prefix",
+			providerIDPrefix: "mycloud://",
+			instanceID:       "vm-123",
+			want:             "mycloud://vm-123",
+		},
+		{
+			name:             "empty instance ID",
+			providerIDPrefix: "cloudstack:///",
+			instanceID:       "",
+			want:             "cloudstack:///",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			cs := &CSCloud{providerIDPrefix: tt.providerIDPrefix}
 			got := cs.getProviderIDFromInstanceID(tt.instanceID)
 			if got != tt.want {
 				t.Errorf("getProviderIDFromInstanceID(%q) = %q, want %q", tt.instanceID, got, tt.want)
@@ -214,7 +228,12 @@ func TestGetInstanceIDFromProviderID(t *testing.T) {
 		want       string
 	}{
 		{
-			name:       "full provider ID format",
+			name:       "CAPC format - triple slash",
+			providerID: "cloudstack:///vm-123",
+			want:       "vm-123",
+		},
+		{
+			name:       "legacy format - external-cloudstack",
 			providerID: "external-cloudstack://vm-123",
 			want:       "vm-123",
 		},
@@ -232,11 +251,6 @@ func TestGetInstanceIDFromProviderID(t *testing.T) {
 			name:       "invalid format - no separator",
 			providerID: "external-cloudstack-vm-123",
 			want:       "external-cloudstack-vm-123",
-		},
-		{
-			name:       "different provider prefix",
-			providerID: "aws://i-1234567890abcdef0",
-			want:       "i-1234567890abcdef0",
 		},
 	}
 

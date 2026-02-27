@@ -216,7 +216,7 @@ func (cs *CSCloud) InstanceMetadata(ctx context.Context, node *corev1.Node) (*cl
 }
 
 func (cs *CSCloud) getProviderIDFromInstanceID(instanceID string) string {
-	return fmt.Sprintf("%s://%s", cs.ProviderName(), instanceID)
+	return fmt.Sprintf("%s%s", cs.providerIDPrefix, instanceID)
 }
 
 func (cs *CSCloud) getInstanceIDFromProviderID(providerID string) string {
@@ -224,5 +224,5 @@ func (cs *CSCloud) getInstanceIDFromProviderID(providerID string) string {
 	if len(parts) == 1 {
 		return providerID
 	}
-	return parts[1]
+	return strings.TrimPrefix(parts[1], "/")
 }
